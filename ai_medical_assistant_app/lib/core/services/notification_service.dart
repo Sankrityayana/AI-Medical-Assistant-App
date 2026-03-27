@@ -61,5 +61,10 @@ class NotificationService {
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
+
+  Future<void> cancelReminder(int id) async {
+    await init();
+    await _plugin.cancel(id);
+  }
 }
 

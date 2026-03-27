@@ -20,6 +20,15 @@ class ChatTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data.get("emergency"))
+        self.assertIn("message", response.data)
+
+    def test_symptom_text_required(self):
+        response = self.client.post(
+            reverse("ask-ai"),
+            {"symptom_text": ""},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch("chat.views.ask_ai")
     def test_ai_payload_is_normalized(self, mock_ask_ai):

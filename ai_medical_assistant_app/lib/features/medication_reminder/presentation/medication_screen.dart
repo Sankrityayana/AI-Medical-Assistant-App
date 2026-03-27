@@ -41,23 +41,27 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
     super.dispose();
   }
 
-  Future<void> _addMedication() async {
-    final timeParts = _timeCtrl.text.trim().split(':');
+  ({int hour, int minute})? _parseReminderTime(String value) {
+    final timeParts = value.trim().split(':');
     if (timeParts.length < 2) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Use time format HH:mm or HH:mm:ss')),
-        );
-      }
-      return;
+      return null;
     }
 
     final hour = int.tryParse(timeParts[0]);
     final minute = int.tryParse(timeParts[1]);
     if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    return (hour: hour, minute: minute);
+  }
+
+  Future<void> _addMedication() async {
+    final parsedTime = _parseReminderTime(_timeCtrl.text);
+    if (parsedTime == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid time (HH:mm or HH:mm:ss).')),
+          const SnackBar(content: Text('Use time format HH:mm or HH:mm:ss')),
         );
       }
       return;
@@ -78,16 +82,108 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
       return;
     }
 
-    await ref.read(medicationRepositoryProvider).addMedication(med);
+    final created = await ref.read(medicationRepositoryProvider).addMedication(med);
+    if (created.id == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Medication saved but reminder could not be scheduled.')),
+        );
+      }
+      ref.invalidate(medicationListProvider);
+      return;
+    }
+
     await _notifications.scheduleDailyReminder(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      id: created.id!,
       title: 'Medication Reminder',
-      body: 'Time to take ${med.name} (${med.dosage})',
-      hour: hour,
-      minute: minute,
+      body: 'Time to take ${created.name} (${created.dosage})',
+      hour: parsedTime.hour,
+      minute: parsedTime.minute,
     );
     _nameCtrl.clear();
     _doseCtrl.clear();
+    ref.invalidate(medicationListProvider);
+  }
+
+  Future<void> _deleteMedication(Medication med) async {
+    if (med.id == null) return;
+    await ref.read(medicationRepositoryProvider).deleteMedication(med.id!);
+    await _notifications.cancelReminder(med.id!);
+    ref.invalidate(medicationListProvider);
+  }
+
+  Future<void> _editMedication(Medication med) async {
+    if (med.id == null) return;
+
+    final nameCtrl = TextEditingController(text: med.name);
+    final dosageCtrl = TextEditingController(text: med.dosage);
+    final timeCtrl = TextEditingController(text: med.reminderTime);
+
+    final shouldSave = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Medication'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Medication name')),
+              const SizedBox(height: 8),
+              TextField(controller: dosageCtrl, decoration: const InputDecoration(labelText: 'Dosage')),
+              const SizedBox(height: 8),
+              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Time (HH:mm:ss)')),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Save')),
+          ],
+        );
+      },
+    );
+
+    if (shouldSave != true) {
+      nameCtrl.dispose();
+      dosageCtrl.dispose();
+      timeCtrl.dispose();
+      return;
+    }
+
+    final parsedTime = _parseReminderTime(timeCtrl.text);
+    if (parsedTime == null || nameCtrl.text.trim().isEmpty || dosageCtrl.text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please provide valid name, dosage, and time.')),
+        );
+      }
+      nameCtrl.dispose();
+      dosageCtrl.dispose();
+      timeCtrl.dispose();
+      return;
+    }
+
+    final updated = await ref.read(medicationRepositoryProvider).updateMedication(
+          id: med.id!,
+          name: nameCtrl.text.trim(),
+          dosage: dosageCtrl.text.trim(),
+          reminderTime: timeCtrl.text.trim(),
+        );
+
+    await _notifications.cancelReminder(med.id!);
+    if (updated.id != null) {
+      await _notifications.scheduleDailyReminder(
+        id: updated.id!,
+        title: 'Medication Reminder',
+        body: 'Time to take ${updated.name} (${updated.dosage})',
+        hour: parsedTime.hour,
+        minute: parsedTime.minute,
+      );
+    }
+
+    nameCtrl.dispose();
+    dosageCtrl.dispose();
+    timeCtrl.dispose();
+
     ref.invalidate(medicationListProvider);
   }
 
@@ -116,16 +212,26 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
                     final med = meds[i];
                     return Card(
                       child: ListTile(
+                        onTap: () => _editMedication(med),
                         title: Text('${med.name} - ${med.dosage}'),
                         subtitle: Text('Reminder: ${med.reminderTime}'),
-                        trailing: Checkbox(
-                          value: med.isTaken,
-                          onChanged: med.id == null
-                              ? null
-                              : (val) async {
-                                  await ref.read(medicationRepositoryProvider).markTaken(med.id!, val ?? false);
-                                  ref.invalidate(medicationListProvider);
-                                },
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: med.isTaken,
+                              onChanged: med.id == null
+                                  ? null
+                                  : (val) async {
+                                      await ref.read(medicationRepositoryProvider).markTaken(med.id!, val ?? false);
+                                      ref.invalidate(medicationListProvider);
+                                    },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: med.id == null ? null : () => _deleteMedication(med),
+                            ),
+                          ],
                         ),
                       ),
                     );

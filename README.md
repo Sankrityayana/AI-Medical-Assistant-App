@@ -7,7 +7,7 @@ Production-oriented starter for a cross-platform Flutter app with Django REST ba
 - Secure authentication (JWT)
 - AI symptom checker with medical safety prompt and disclaimer
 - Emergency keyword detection and alert flow
-- Medication reminders with daily scheduled local notifications and taken/missed status
+- Medication reminders with daily scheduled local notifications, edit/delete support, and taken/missed status
 - Health dashboard (steps, heart rate, sleep) with charts
 - Voice assistant (speech-to-text and text-to-speech)
 - Light and dark themes
@@ -77,6 +77,11 @@ Production-oriented starter for a cross-platform Flutter app with Django REST ba
 - Auth API tests: `accounts/tests.py`
 - Chat emergency test: `chat/tests.py`
 - Run: `python manage.py test`
+
+### Continuous Integration
+
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+- Runs Django migrations + tests and Flutter tests on every push/PR to `main`
 
 ## Quick Scripts (Windows PowerShell)
 
