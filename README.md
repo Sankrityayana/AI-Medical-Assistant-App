@@ -1,53 +1,84 @@
 # AI Medical Assistant App
 
-Production-oriented starter for a cross-platform Flutter app with Django REST backend and safe AI integration.
+Production-oriented starter for a cross-platform Flutter app with a Django REST backend and safety-first AI symptom guidance.
 
-## Features
+## What This Includes
 
-- Secure authentication (JWT)
-- AI symptom checker with medical safety prompt and disclaimer
-- Emergency keyword detection and alert flow
-- Medication reminders with daily scheduled local notifications, edit/delete support, and taken/missed status
-- Health dashboard (steps, heart rate, sleep) with charts
-- Voice assistant (speech-to-text and text-to-speech)
-- Light and dark themes
+- JWT authentication and profile endpoints
+- AI symptom checker with strict non-diagnostic disclaimer behavior
+- Emergency signal detection that bypasses AI and prompts urgent action
+- Medication reminders with daily local notification scheduling
+- Health dashboard with charted vitals and habits
+- Voice input/output flows for accessibility
+- Windows PowerShell automation scripts for setup, run, and verification
 
-## Workspace Structure
+## Repository Structure
 
 - `ai_medical_assistant_app/` Flutter client
 - `backend/` Django REST API
+- `scripts/` PowerShell automation helpers
 
-## Flutter Setup
+## Quick Start (Windows)
 
-1. Install Flutter stable and run:
-   - `cd ai_medical_assistant_app`
-   - `flutter pub get`
-2. Copy env template:
-   - `.env.example` -> `.env` (or configure constants directly)
+1. Backend setup:
+   - `./scripts/setup_backend.ps1`
+2. Run backend:
+   - `./scripts/run_backend.ps1`
+3. Run Flutter app:
+   - `./scripts/run_flutter.ps1`
+4. Full verification (backend migrate/tests + Flutter tests):
+   - `./scripts/verify_all.ps1`
+
+## Manual Setup
+
+### Flutter
+
+1. `cd ai_medical_assistant_app`
+2. `flutter pub get`
 3. Update backend base URL in `lib/core/constants/api_constants.dart` if needed.
-4. Run app:
-   - `flutter run`
+4. `flutter run`
 
-### Flutter Build
+Build commands:
 
-- Android APK: `flutter build apk --release`
+- Android: `flutter build apk --release`
 - iOS: `flutter build ios --release`
 
-## Django Setup
+### Django
 
-1. Create virtualenv and install requirements:
-   - `cd backend`
-   - `python -m venv .venv`
-   - `.venv\\Scripts\\activate` (Windows)
-   - `pip install -r requirements.txt`
-2. Copy env:
-   - `.env.example` -> `.env`
-3. Default local setup uses SQLite. To force SQLite in any environment, set `USE_SQLITE=True`.
-4. To use PostgreSQL, set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_HOST` in `.env`.
-5. Run migrations and server:
-   - `python manage.py makemigrations`
-   - `python manage.py migrate`
-   - `python manage.py runserver`
+1. `cd backend`
+2. `python -m venv .venv`
+3. `.venv\\Scripts\\activate` (Windows)
+4. `pip install -r requirements.txt`
+5. Copy `.env.example` to `.env`
+6. `python manage.py migrate`
+7. `python manage.py runserver`
+
+## Environment Configuration
+
+Core backend variables:
+
+- `DJANGO_SECRET_KEY`: set to a long random value (32+ chars recommended)
+- `DEBUG`: `True` for local only
+- `ALLOWED_HOSTS`: comma-separated hosts
+- `OPENAI_API_KEY`: OpenAI API key
+- `OPENAI_MODEL`: default `gpt-4o-mini`
+- `OPENAI_TIMEOUT_SECONDS`: AI request timeout (default `20`)
+- `OPENAI_MAX_RETRIES`: AI retry count (default `3`)
+- `CHAT_AI_RATE_LIMIT`: scoped throttle for symptom endpoint (default `20/minute`)
+
+Database selection behavior:
+
+- `USE_SQLITE=True` forces SQLite regardless of PostgreSQL variables
+- If `USE_SQLITE` is not true and `POSTGRES_DB` is set, PostgreSQL is used
+- If neither applies, SQLite is used by default
+
+PostgreSQL variables (only when using Postgres):
+
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
 
 ## API Endpoints
 
@@ -59,53 +90,45 @@ Production-oriented starter for a cross-platform Flutter app with Django REST ba
 - `PATCH /medications/{id}`
 - `GET/POST /user/health-data/`
 
+## Testing and CI
+
+Local tests:
+
+- Backend: `python manage.py test`
+- Flutter: `flutter test`
+
+Notes about `verify_all.ps1`:
+
+- Runs with fail-fast command checks
+- Forces SQLite (`USE_SQLITE=True`) for deterministic local verification
+- Uses a strong temporary secret key value during verification to avoid weak-key JWT warnings
+
+CI:
+
+- Workflow: `.github/workflows/ci.yml`
+- Runs backend migration/tests and Flutter tests on pushes and pull requests
+
 ## AI Safety Rules
 
-- The app never presents AI as a doctor.
-- All symptom guidance includes a disclaimer.
-- Emergency symptoms (`chest pain`, `can't breathe`, `severe bleeding`) trigger emergency alert and bypass AI response.
+- The assistant does not provide medical diagnosis
+- Every symptom response includes a disclaimer
+- Emergency phrases such as `chest pain`, `can't breathe`, and `severe bleeding` trigger emergency handling instead of AI triage
 
-## Testing
+## Deployment Notes
 
-### Flutter
+Backend:
 
-- Unit test: `test/emergency_detector_test.dart`
-- Widget test: `test/widget_test.dart`
-- Run: `flutter test`
+- Deploy on Render, Azure, or AWS with PostgreSQL for production
+- Set production environment variables explicitly
+- Enforce HTTPS and secure host/CORS settings
 
-### Django
+Frontend:
 
-- Auth API tests: `accounts/tests.py`
-- Chat emergency test: `chat/tests.py`
-- Run: `python manage.py test`
+- Build and sign Android APK/AAB
+- Build/sign iOS release via Xcode and publish through App Store Connect
 
-### Continuous Integration
+## Compliance Reminder
 
-- GitHub Actions workflow: `.github/workflows/ci.yml`
-- Runs Django migrations + tests and Flutter tests on every push/PR to `main`
-
-## Quick Scripts (Windows PowerShell)
-
-- Backend setup: `./scripts/setup_backend.ps1`
-- Run backend: `./scripts/run_backend.ps1`
-- Run Flutter app: `./scripts/run_flutter.ps1`
-- Full verification (migrate + tests): `./scripts/verify_all.ps1`
-
-## Deployment
-
-### Backend
-
-- Deploy Django to Render or AWS (Elastic Beanstalk/ECS) with PostgreSQL.
-- Set environment variables from `.env.example`.
-- Enforce HTTPS at ingress/load balancer.
-
-### Frontend
-
-- Distribute Android release APK/AAB.
-- Build/sign iOS release in Xcode and publish via App Store Connect.
-
-## Compliance Notes
-
-- This app is not a medical diagnosis tool.
-- Do not store sensitive health records insecurely.
-- Use HTTPS and secure token storage for all authenticated traffic.
+- This app is not a medical diagnosis tool
+- Store health data securely
+- Use HTTPS and secure token storage for authenticated traffic
