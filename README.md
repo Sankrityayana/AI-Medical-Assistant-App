@@ -42,8 +42,9 @@ Production-oriented starter for a cross-platform Flutter app with Django REST ba
    - `pip install -r requirements.txt`
 2. Copy env:
    - `.env.example` -> `.env`
-3. Ensure PostgreSQL is running and credentials match `.env`.
-4. Run migrations and server:
+3. Default local setup uses SQLite. To force SQLite in any environment, set `USE_SQLITE=True`.
+4. To use PostgreSQL, set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_HOST` in `.env`.
+5. Run migrations and server:
    - `python manage.py makemigrations`
    - `python manage.py migrate`
    - `python manage.py runserver`

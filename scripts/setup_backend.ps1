@@ -1,5 +1,20 @@
 $ErrorActionPreference = "Stop"
 
+function Invoke-Step {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Command,
+    [Parameter(Mandatory = $true)]
+    [string]$Description
+  )
+
+  Write-Host $Description
+  Invoke-Expression $Command
+  if ($LASTEXITCODE -ne 0) {
+    throw "Step failed ($Description) with exit code $LASTEXITCODE"
+  }
+}
+
 Set-Location "$PSScriptRoot\..\backend"
 
 if (-not (Test-Path ".venv\Scripts\python.exe")) {
@@ -12,13 +27,13 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
 }
 
 if (Test-Path ".venv\Scripts\python.exe") {
-  .\.venv\Scripts\python -m pip install --upgrade pip
-  .\.venv\Scripts\python -m pip install -r requirements.txt
+  Invoke-Step ".\.venv\Scripts\python -m pip install --upgrade pip" "Upgrading pip in backend virtual environment..."
+  Invoke-Step ".\.venv\Scripts\python -m pip install -r requirements.txt" "Installing backend dependencies in virtual environment..."
   $pythonExe = ".\.venv\Scripts\python"
 }
 else {
-  python -m pip install --upgrade pip
-  python -m pip install -r requirements.txt
+  Invoke-Step "python -m pip install --upgrade pip" "Upgrading system pip..."
+  Invoke-Step "python -m pip install -r requirements.txt" "Installing backend dependencies with system Python..."
   $pythonExe = "python"
 }
 
@@ -27,5 +42,5 @@ if (-not (Test-Path ".env")) {
   Write-Host "Created backend .env from .env.example"
 }
 
-& $pythonExe manage.py migrate
+Invoke-Step "$pythonExe manage.py migrate" "Applying backend migrations..."
 Write-Host "Backend setup complete."
