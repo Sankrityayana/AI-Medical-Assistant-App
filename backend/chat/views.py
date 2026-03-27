@@ -10,6 +10,7 @@ from .services import EMERGENCY_KEYWORDS, ask_ai, has_emergency_signal, normaliz
 
 class AskAIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = "chat_ai"
 
     def post(self, request):
         request_serializer = AskAIRequestSerializer(data=request.data)

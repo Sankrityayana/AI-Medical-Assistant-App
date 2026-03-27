@@ -14,6 +14,10 @@ final medicationListProvider = FutureProvider<List<Medication>>((ref) async {
   return ref.read(medicationRepositoryProvider).fetchMedications();
 });
 
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+});
+
 class MedicationScreen extends ConsumerStatefulWidget {
   const MedicationScreen({super.key});
 
@@ -25,11 +29,12 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
   final _nameCtrl = TextEditingController();
   final _doseCtrl = TextEditingController();
   final _timeCtrl = TextEditingController(text: '08:00:00');
-  final NotificationService _notifications = NotificationService();
+  late final NotificationService _notifications;
 
   @override
   void initState() {
     super.initState();
+    _notifications = ref.read(notificationServiceProvider);
     _notifications.init();
   }
 
@@ -54,6 +59,18 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
     }
 
     return (hour: hour, minute: minute);
+  }
+
+  void _disposeEditingControllers(
+    TextEditingController nameCtrl,
+    TextEditingController dosageCtrl,
+    TextEditingController timeCtrl,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      nameCtrl.dispose();
+      dosageCtrl.dispose();
+      timeCtrl.dispose();
+    });
   }
 
   Future<void> _addMedication() async {
@@ -124,15 +141,17 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Edit Medication'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Medication name')),
-              const SizedBox(height: 8),
-              TextField(controller: dosageCtrl, decoration: const InputDecoration(labelText: 'Dosage')),
-              const SizedBox(height: 8),
-              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Time (HH:mm:ss)')),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Medication name')),
+                const SizedBox(height: 8),
+                TextField(controller: dosageCtrl, decoration: const InputDecoration(labelText: 'Dosage')),
+                const SizedBox(height: 8),
+                TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Time (HH:mm:ss)')),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
@@ -143,9 +162,8 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
     );
 
     if (shouldSave != true) {
-      nameCtrl.dispose();
-      dosageCtrl.dispose();
-      timeCtrl.dispose();
+      FocusScope.of(context).unfocus();
+      _disposeEditingControllers(nameCtrl, dosageCtrl, timeCtrl);
       return;
     }
 
@@ -156,9 +174,8 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
           const SnackBar(content: Text('Please provide valid name, dosage, and time.')),
         );
       }
-      nameCtrl.dispose();
-      dosageCtrl.dispose();
-      timeCtrl.dispose();
+      FocusScope.of(context).unfocus();
+      _disposeEditingControllers(nameCtrl, dosageCtrl, timeCtrl);
       return;
     }
 
@@ -180,9 +197,8 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
       );
     }
 
-    nameCtrl.dispose();
-    dosageCtrl.dispose();
-    timeCtrl.dispose();
+    FocusScope.of(context).unfocus();
+    _disposeEditingControllers(nameCtrl, dosageCtrl, timeCtrl);
 
     ref.invalidate(medicationListProvider);
   }

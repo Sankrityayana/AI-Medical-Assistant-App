@@ -1,5 +1,10 @@
+import logging
+import time
+
 from django.conf import settings
-from openai import OpenAI
+from openai import APIConnectionError, APITimeoutError, OpenAI, RateLimitError
+
+logger = logging.getLogger(__name__)
 
 EMERGENCY_KEYWORDS = ["chest pain", "can't breathe", "severe bleeding"]
 
@@ -63,13 +68,46 @@ def ask_ai(symptom_text: str) -> dict:
         }
 
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
-    completion = client.chat.completions.create(
-        model=settings.OPENAI_MODEL,
-        temperature=0.2,
-        messages=[
-            {"role": "system", "content": SAFETY_PROMPT},
-            {"role": "user", "content": symptom_text},
-        ],
-    )
-    content = completion.choices[0].message.content or "{}"
-    return {"raw": content, "fallback": normalize_ai_payload({})}
+    fallback = normalize_ai_payload({})
+    max_retries = max(settings.OPENAI_MAX_RETRIES, 1)
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            completion = client.chat.completions.create(
+                model=settings.OPENAI_MODEL,
+                temperature=0.2,
+                timeout=settings.OPENAI_TIMEOUT_SECONDS,
+                messages=[
+                    {"role": "system", "content": SAFETY_PROMPT},
+                    {"role": "user", "content": symptom_text},
+                ],
+            )
+            content = completion.choices[0].message.content or "{}"
+            return {"raw": content, "fallback": fallback}
+        except (APITimeoutError, APIConnectionError, RateLimitError) as exc:
+            logger.warning("OpenAI transient failure on attempt %s/%s: %s", attempt, max_retries, exc)
+            if attempt >= max_retries:
+                logger.exception("OpenAI call failed after retries")
+                return {
+                    "raw": "{}",
+                    "fallback": {
+                        "possible_causes": ["AI service is temporarily unavailable."],
+                        "urgency_level": "medium",
+                        "next_steps": ["Please try again shortly or consult a doctor if symptoms worsen."],
+                        "disclaimer": DEFAULT_DISCLAIMER,
+                    },
+                }
+            time.sleep(min(2 ** (attempt - 1), 4))
+        except Exception:
+            logger.exception("Unexpected OpenAI failure")
+            return {
+                "raw": "{}",
+                "fallback": {
+                    "possible_causes": ["Unable to process your request at the moment."],
+                    "urgency_level": "medium",
+                    "next_steps": ["Consult a licensed doctor for further guidance."],
+                    "disclaimer": DEFAULT_DISCLAIMER,
+                },
+            }
+
+    return {"raw": "{}", "fallback": fallback}
