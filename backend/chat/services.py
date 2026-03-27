@@ -10,6 +10,40 @@ SAFETY_PROMPT = (
     "(one of low, medium, high), next_steps (array of strings), disclaimer (string)."
 )
 
+DEFAULT_DISCLAIMER = "This app is not a medical diagnosis tool. Please consult a licensed doctor."
+
+
+def _sanitize_string_list(value, fallback):
+    if isinstance(value, list):
+        cleaned = [str(item).strip() for item in value if str(item).strip()]
+        if cleaned:
+            return cleaned
+    return fallback
+
+
+def normalize_ai_payload(payload: dict) -> dict:
+    possible_causes = _sanitize_string_list(
+        payload.get("possible_causes"),
+        ["Could not confidently identify possible causes from the provided symptoms."],
+    )
+    next_steps = _sanitize_string_list(
+        payload.get("next_steps"),
+        ["Consult a licensed doctor for a professional evaluation."],
+    )
+
+    urgency = str(payload.get("urgency_level", "medium")).strip().lower()
+    if urgency not in {"low", "medium", "high"}:
+        urgency = "medium"
+
+    disclaimer = str(payload.get("disclaimer", "")).strip() or DEFAULT_DISCLAIMER
+
+    return {
+        "possible_causes": possible_causes,
+        "urgency_level": urgency,
+        "next_steps": next_steps,
+        "disclaimer": disclaimer,
+    }
+
 
 def has_emergency_signal(text: str) -> bool:
     lowered = text.lower()
@@ -17,6 +51,17 @@ def has_emergency_signal(text: str) -> bool:
 
 
 def ask_ai(symptom_text: str) -> dict:
+    if not settings.OPENAI_API_KEY:
+        return {
+            "raw": "{}",
+            "fallback": {
+                "possible_causes": ["AI service is not configured."],
+                "urgency_level": "medium",
+                "next_steps": ["Configure OPENAI_API_KEY in backend environment settings."],
+                "disclaimer": DEFAULT_DISCLAIMER,
+            },
+        }
+
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
     completion = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
@@ -27,4 +72,4 @@ def ask_ai(symptom_text: str) -> dict:
         ],
     )
     content = completion.choices[0].message.content or "{}"
-    return {"raw": content}
+    return {"raw": content, "fallback": normalize_ai_payload({})}

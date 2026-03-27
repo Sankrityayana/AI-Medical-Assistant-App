@@ -42,16 +42,49 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
   }
 
   Future<void> _addMedication() async {
+    final timeParts = _timeCtrl.text.trim().split(':');
+    if (timeParts.length < 2) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Use time format HH:mm or HH:mm:ss')),
+        );
+      }
+      return;
+    }
+
+    final hour = int.tryParse(timeParts[0]);
+    final minute = int.tryParse(timeParts[1]);
+    if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid time (HH:mm or HH:mm:ss).')),
+        );
+      }
+      return;
+    }
+
     final med = Medication(
       name: _nameCtrl.text.trim(),
       dosage: _doseCtrl.text.trim(),
       reminderTime: _timeCtrl.text.trim(),
     );
+
+    if (med.name.isEmpty || med.dosage.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Medication name and dosage are required.')),
+        );
+      }
+      return;
+    }
+
     await ref.read(medicationRepositoryProvider).addMedication(med);
-    await _notifications.showSimpleReminder(
+    await _notifications.scheduleDailyReminder(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: 'Medication Reminder',
       body: 'Time to take ${med.name} (${med.dosage})',
+      hour: hour,
+      minute: minute,
     );
     _nameCtrl.clear();
     _doseCtrl.clear();

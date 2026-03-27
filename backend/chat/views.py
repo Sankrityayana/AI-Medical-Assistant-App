@@ -4,7 +4,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .services import EMERGENCY_KEYWORDS, ask_ai, has_emergency_signal
+from .services import EMERGENCY_KEYWORDS, ask_ai, has_emergency_signal, normalize_ai_payload
 
 
 class AskAIView(APIView):
@@ -27,16 +27,12 @@ class AskAIView(APIView):
 
         ai_result = ask_ai(symptom_text)
         raw = ai_result.get("raw", "{}")
+        fallback = ai_result.get("fallback", {})
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError:
-            parsed = {
-                "possible_causes": ["Unable to parse AI output."],
-                "urgency_level": "medium",
-                "next_steps": ["Consult a doctor for proper evaluation."],
-                "disclaimer": "This app is not a medical diagnosis tool.",
-            }
+            parsed = fallback
 
-        parsed.setdefault("disclaimer", "This app is not a medical diagnosis tool.")
-        parsed["emergency"] = False
-        return Response(parsed)
+        safe_payload = normalize_ai_payload(parsed if isinstance(parsed, dict) else fallback)
+        safe_payload["emergency"] = False
+        return Response(safe_payload)
