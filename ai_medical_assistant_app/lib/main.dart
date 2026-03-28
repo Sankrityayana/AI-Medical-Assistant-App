@@ -6,6 +6,7 @@ import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/auth_controller.dart';
 import 'features/auth/presentation/login_screen.dart';
+import 'shared/widgets/blue_gradient_background.dart';
 import 'shared/widgets/disclaimer_dialog.dart';
 import 'shared/widgets/home_shell.dart';
 
@@ -61,7 +62,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       home: !_checkedDisclaimer
-          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          ? const _AppStartupScreen()
           : Stack(
               children: [
                 authStatus == AuthStatus.authenticated ? const HomeShell() : const LoginScreen(),
@@ -83,6 +84,63 @@ class _MyAppState extends ConsumerState<MyApp> {
                   ),
               ],
             ),
+    );
+  }
+}
+
+class _AppStartupScreen extends StatelessWidget {
+  const _AppStartupScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Scaffold(
+      body: BlueGradientBackground(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Card(
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: scheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(Icons.health_and_safety_rounded, color: scheme.primary, size: 30),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        AppStrings.appName,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Loading your secure health workspace...',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 18),
+                      const LinearProgressIndicator(minHeight: 5),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

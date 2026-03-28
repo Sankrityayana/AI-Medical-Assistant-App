@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../shared/models/medication.dart';
+import '../../../shared/widgets/app_ui_components.dart';
 import '../../../shared/widgets/blue_gradient_background.dart';
 import '../data/medication_repository.dart';
 
@@ -222,9 +223,15 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Add Reminder',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      const AppSectionHeader(
+                        title: 'Add Reminder',
+                        subtitle: 'Create a daily medication notification schedule.',
+                        icon: Icons.add_alarm_rounded,
+                      ),
+                      const SizedBox(height: 8),
+                      const AppInfoBanner(
+                        text: 'Tip: Use HH:mm:ss format, for example 08:30:00',
+                        icon: Icons.info_outline_rounded,
                       ),
                       const SizedBox(height: 10),
                       TextField(

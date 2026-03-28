@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/speech_service.dart';
+import '../../../shared/widgets/app_ui_components.dart';
 import '../../../shared/widgets/blue_gradient_background.dart';
 import '../../chat_symptom_checker/presentation/chat_controller.dart';
 import '../../emergency/presentation/emergency_alert_dialog.dart';
@@ -18,6 +19,10 @@ class VoiceAssistantScreen extends ConsumerStatefulWidget {
 class _VoiceAssistantScreenState extends ConsumerState<VoiceAssistantScreen> {
   String _recognizedText = '';
   bool _listening = false;
+
+  void _applyPrompt(String value) {
+    setState(() => _recognizedText = value);
+  }
 
   Future<void> _toggleListen() async {
     final speech = ref.read(speechServiceProvider);
@@ -70,20 +75,38 @@ class _VoiceAssistantScreenState extends ConsumerState<VoiceAssistantScreen> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
+                  child: AppSectionHeader(
+                    title: 'Voice Assistant',
+                    subtitle: _listening ? 'Listening now. Speak clearly.' : 'Tap start and describe symptoms naturally.',
+                    icon: _listening ? Icons.graphic_eq_rounded : Icons.hearing_rounded,
+                  ),
+                ),
+              ),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      Icon(_listening ? Icons.graphic_eq_rounded : Icons.hearing_rounded, color: scheme.primary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _listening ? 'Listening now. Speak clearly.' : 'Tap start and describe symptoms naturally.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                      AppActionChip(
+                        icon: Icons.thermostat_rounded,
+                        label: 'Fever and chills',
+                        onTap: () => _applyPrompt('I have fever with chills and body pain.'),
+                      ),
+                      const SizedBox(width: 8),
+                      AppActionChip(
+                        icon: Icons.mood_bad_rounded,
+                        label: 'Nausea and weakness',
+                        onTap: () => _applyPrompt('I feel nausea and weakness since morning.'),
+                      ),
+                      const SizedBox(width: 8),
+                      AppActionChip(
+                        icon: Icons.air_rounded,
+                        label: 'Breathing discomfort',
+                        onTap: () => _applyPrompt('I feel shortness of breath when walking.'),
                       ),
                     ],
                   ),
                 ),
-              ),
               const SizedBox(height: 10),
               Expanded(
                 child: Card(

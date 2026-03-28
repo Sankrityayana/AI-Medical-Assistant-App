@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/api_client.dart';
+import '../../../shared/widgets/app_ui_components.dart';
 import '../../../shared/widgets/blue_gradient_background.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../data/health_repository.dart';
@@ -74,54 +75,41 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ];
 
-              Widget statCard({required IconData icon, required String label, required String value}) {
-                return Expanded(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(icon, color: scheme.primary),
-                          const SizedBox(height: 10),
-                          Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 2),
-                          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Today\'s Health Snapshot',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                    const AppSectionHeader(
+                      title: 'Today\'s Health Snapshot',
+                      subtitle: 'Track key activity and wellness signals in one place.',
+                      icon: Icons.dashboard_customize_rounded,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Track key activity and wellness signals in one place.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                    const SizedBox(height: 10),
+                    const AppInfoBanner(
+                      text: 'Your latest values refresh from backend health records.',
+                      icon: Icons.sync_rounded,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        statCard(icon: Icons.directions_walk_rounded, label: 'Steps', value: '${health.steps}'),
+                        Expanded(
+                          child: AppMetricTile(icon: Icons.directions_walk_rounded, label: 'Steps', value: '${health.steps}'),
+                        ),
                         const SizedBox(width: 10),
-                        statCard(icon: Icons.favorite_rounded, label: 'Heart Rate', value: '${health.heartRate} bpm'),
+                        Expanded(
+                          child: AppMetricTile(icon: Icons.favorite_rounded, label: 'Heart Rate', value: '${health.heartRate} bpm'),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        statCard(
-                          icon: Icons.nights_stay_rounded,
-                          label: 'Sleep',
-                          value: '${health.sleepHours.toStringAsFixed(1)} h',
+                        Expanded(
+                          child: AppMetricTile(
+                            icon: Icons.nights_stay_rounded,
+                            label: 'Sleep',
+                            value: '${health.sleepHours.toStringAsFixed(1)} h',
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(

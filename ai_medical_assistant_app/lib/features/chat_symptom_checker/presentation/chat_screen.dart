@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/app_ui_components.dart';
 import '../../../shared/widgets/blue_gradient_background.dart';
 import '../../emergency/presentation/emergency_alert_dialog.dart';
 import 'chat_controller.dart';
@@ -37,28 +38,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  void _usePrompt(String value) {
+    _controller.text = value;
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
-    final scheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Symptom Checker')),
-      body: BlueGradientBackground(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(12, 12, 12, 6),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: scheme.surface.withValues(alpha: 0.78),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
+              child: const AppSectionHeader(
+                title: 'Symptom Checker',
+                subtitle: 'Share symptoms clearly for safer AI guidance and next steps.',
+                icon: Icons.monitor_heart_outlined,
                 children: [
                   Icon(Icons.monitor_heart_outlined, color: scheme.primary),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 2, 12, 6),
+              child: AppInfoBanner(
+                text: 'For severe pain, breathing trouble, or bleeding, seek emergency help first.',
+                icon: Icons.shield_outlined,
+              ),
+            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Row(
+                children: [
+                  AppActionChip(
+                    icon: Icons.sick_rounded,
+                    label: 'Headache + fever',
+                    onTap: () => _usePrompt('I have headache and fever since yesterday.'),
+                  ),
                   const SizedBox(width: 8),
+                  AppActionChip(
+                    icon: Icons.air_rounded,
+                    label: 'Cough + sore throat',
+                    onTap: () => _usePrompt('I have cough with sore throat and mild fatigue.'),
+                  ),
+                  const SizedBox(width: 8),
+                  AppActionChip(
+                    icon: Icons.bedtime_rounded,
+                    label: 'Fatigue + poor sleep',
+                    onTap: () => _usePrompt('I feel very tired and have poor sleep recently.'),
+                  ),
+                ],
+                  const SizedBox(width: 8),
+            ),
                   Expanded(
                     child: Text(
                       'Share symptoms clearly for safer AI guidance and next steps.',
