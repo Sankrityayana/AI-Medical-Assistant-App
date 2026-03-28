@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../shared/models/medication.dart';
+import '../../../shared/widgets/blue_gradient_background.dart';
 import '../data/medication_repository.dart';
 
 final medicationRepositoryProvider = Provider<MedicationRepository>((ref) {
@@ -206,58 +207,103 @@ class _MedicationScreenState extends ConsumerState<MedicationScreen> {
   @override
   Widget build(BuildContext context) {
     final medsAsync = ref.watch(medicationListProvider);
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Medication Reminders')),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Medication name')),
-            const SizedBox(height: 8),
-            TextField(controller: _doseCtrl, decoration: const InputDecoration(labelText: 'Dosage')),
-            const SizedBox(height: 8),
-            TextField(controller: _timeCtrl, decoration: const InputDecoration(labelText: 'Time (HH:mm:ss)')),
-            const SizedBox(height: 8),
-            FilledButton(onPressed: _addMedication, child: const Text('Add Medication')),
-            const SizedBox(height: 12),
-            Expanded(
-              child: medsAsync.when(
-                data: (meds) => ListView.builder(
-                  itemCount: meds.length,
-                  itemBuilder: (_, i) {
-                    final med = meds[i];
-                    return Card(
-                      child: ListTile(
-                        onTap: () => _editMedication(med),
-                        title: Text('${med.name} - ${med.dosage}'),
-                        subtitle: Text('Reminder: ${med.reminderTime}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Checkbox(
-                              value: med.isTaken,
-                              onChanged: med.id == null
-                                  ? null
-                                  : (val) async {
-                                      await ref.read(medicationRepositoryProvider).markTaken(med.id!, val ?? false);
-                                      ref.invalidate(medicationListProvider);
-                                    },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: med.id == null ? null : () => _deleteMedication(med),
-                            ),
-                          ],
+      body: BlueGradientBackground(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Add Reminder',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _nameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Medication name',
+                          prefixIcon: Icon(Icons.medication_liquid_rounded),
                         ),
                       ),
-                    );
-                  },
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _doseCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Dosage',
+                          prefixIcon: Icon(Icons.monitor_weight_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _timeCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Time (HH:mm:ss)',
+                          prefixIcon: Icon(Icons.schedule_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        onPressed: _addMedication,
+                        icon: const Icon(Icons.add_alarm_rounded),
+                        label: const Text('Add Medication'),
+                      ),
+                    ],
+                  ),
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => const Center(child: Text('Failed to load medications')),
               ),
-            )
-          ],
+              const SizedBox(height: 8),
+              Expanded(
+                child: medsAsync.when(
+                  data: (meds) => ListView.builder(
+                    itemCount: meds.length,
+                    itemBuilder: (_, i) {
+                      final med = meds[i];
+                      return Card(
+                        child: ListTile(
+                          onTap: () => _editMedication(med),
+                          leading: CircleAvatar(
+                            backgroundColor: scheme.primaryContainer,
+                            child: Icon(Icons.medication_rounded, color: scheme.primary),
+                          ),
+                          title: Text('${med.name} - ${med.dosage}'),
+                          subtitle: Text('Reminder: ${med.reminderTime}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Checkbox(
+                                value: med.isTaken,
+                                onChanged: med.id == null
+                                    ? null
+                                    : (val) async {
+                                        await ref.read(medicationRepositoryProvider).markTaken(med.id!, val ?? false);
+                                        ref.invalidate(medicationListProvider);
+                                      },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: med.id == null ? null : () => _deleteMedication(med),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (_, __) => const Center(child: Text('Failed to load medications')),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

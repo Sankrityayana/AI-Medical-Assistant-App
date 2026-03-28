@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/speech_service.dart';
+import '../../../shared/widgets/blue_gradient_background.dart';
 import '../../chat_symptom_checker/presentation/chat_controller.dart';
 import '../../emergency/presentation/emergency_alert_dialog.dart';
 
@@ -56,30 +57,61 @@ class _VoiceAssistantScreenState extends ConsumerState<VoiceAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Voice Assistant')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              _recognizedText.isEmpty ? 'Tap mic and start speaking...' : _recognizedText,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: _toggleListen,
-              icon: Icon(_listening ? Icons.mic_off : Icons.mic),
-              label: Text(_listening ? 'Stop Listening' : 'Start Listening'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _sendToAi,
-              icon: const Icon(Icons.record_voice_over),
-              label: const Text('Send To AI & Speak Response'),
-            ),
-          ],
+      body: BlueGradientBackground(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Icon(_listening ? Icons.graphic_eq_rounded : Icons.hearing_rounded, color: scheme.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _listening ? 'Listening now. Speak clearly.' : 'Tap start and describe symptoms naturally.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        _recognizedText.isEmpty ? 'Your recognized speech will appear here...' : _recognizedText,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.35),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _toggleListen,
+                icon: Icon(_listening ? Icons.mic_off_rounded : Icons.mic_rounded),
+                label: Text(_listening ? 'Stop Listening' : 'Start Listening'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _sendToAi,
+                icon: const Icon(Icons.record_voice_over_rounded),
+                label: const Text('Send To AI & Speak Response'),
+              ),
+            ],
+          ),
         ),
       ),
     );

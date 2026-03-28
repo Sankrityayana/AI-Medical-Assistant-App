@@ -5,10 +5,19 @@ class EmergencyAlertDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return AlertDialog(
-      title: const Text('Emergency Alert'),
-      content: const Text(
+      title: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: scheme.error),
+          const SizedBox(width: 8),
+          const Text('Emergency Alert'),
+        ],
+      ),
+      content: Text(
         'Potential emergency detected. Please call your local emergency number immediately.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.35),
       ),
       actions: [
         FilledButton(
